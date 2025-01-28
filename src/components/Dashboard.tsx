@@ -24,7 +24,13 @@ const Dashboard = () => {
                 </Link>
             )}
 
-            <Calendar />
+            <Calendar
+                userId="user123"
+                onSubmit={(data) => {
+                    // Handle the submitted data
+                    // Make API call to save to database
+                }}
+            />
 
             <button
                 onClick={handleLogout}

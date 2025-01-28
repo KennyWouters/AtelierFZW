@@ -1,30 +1,57 @@
 import React, { useState, useEffect } from 'react';
+import { AlertCircle, CheckCircle } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
-const CalendarSelector = () => {
+const Calendar = () => {
+  const [mounted, setMounted] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
   const [currentDate] = useState(new Date());
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [userId, setUserId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Fetch authenticated user on component mount
+  // Handle hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Fetch user data using Supabase from shared client
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch('/api/auth/user');
-        const data = await response.json();
-        if (data.user?.id) {
-          setUserId(data.user.id);
+        setIsLoading(true);
+
+        // Get the current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
+        if (!session) {
+          throw new Error('No active session');
         }
+
+        // Just use the session user id directly
+        setUserId(session.user.id);
+        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching user:', error);
-        setShowAlert(true);
-        setAlertMessage('Error loading user data');
+
+        if (retryCount < 3) {
+          console.log(`Retrying... Attempt ${retryCount + 1} of 3`);
+          setRetryCount(prev => prev + 1);
+          setTimeout(() => fetchUser(), 1000 * (retryCount + 1));
+        } else {
+          setIsLoading(false);
+          setShowAlert(true);
+          setAlertMessage(`Error loading user data: ${error.message}`);
+        }
       }
     };
 
     fetchUser();
-  }, []);
+  }, [retryCount]);
 
   const handleSubmit = async () => {
     if (!userId) {
@@ -34,20 +61,18 @@ const CalendarSelector = () => {
     }
 
     try {
-      const response = await fetch('/api/calendar/dates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          dates: selectedDates.map(date => date.toISOString().split('T')[0])
-        })
-      });
+      // Save dates to Supabase
+      const { error } = await supabase
+          .from('calendar_dates')  // replace with your actual table name
+          .insert(
+              selectedDates.map(date => ({
+                user_id: userId,
+                date: date.toISOString().split('T')[0],
+                created_at: new Date().toISOString()
+              }))
+          );
 
-      if (!response.ok) {
-        throw new Error('Failed to save dates');
-      }
+      if (error) throw error;
 
       setShowAlert(true);
       setAlertMessage('Dates saved successfully');
@@ -55,11 +80,11 @@ const CalendarSelector = () => {
     } catch (error) {
       console.error('Error saving dates:', error);
       setShowAlert(true);
-      setAlertMessage('Error saving dates');
+      setAlertMessage(`Error saving dates: ${error.message}`);
     }
   };
 
-  // Rest of the existing calendar code...
+  // Calendar generation code remains the same
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
   const daysInMonth = lastDayOfMonth.getDate();
@@ -107,6 +132,19 @@ const CalendarSelector = () => {
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // Don't render until client-side hydration is complete
+  if (!mounted) {
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+        <div className="p-4 max-w-md mx-auto bg-white rounded-lg shadow-lg">
+          <div className="text-center text-gray-600">Loading user data...</div>
+        </div>
+    );
+  }
+
   return (
       <div className="p-4 max-w-md mx-auto bg-white rounded-lg shadow-lg">
         <div className="mb-4 text-center">
@@ -116,11 +154,16 @@ const CalendarSelector = () => {
         </div>
 
         {showAlert && (
-            <div className={`mb-4 p-4 rounded-md ${
+            <div className={`mb-4 p-4 rounded-md flex items-center gap-2 ${
                 alertMessage.includes('Error')
                     ? 'bg-red-50 border border-red-200 text-red-600'
                     : 'bg-green-50 border border-green-200 text-green-600'
             }`}>
+              {alertMessage.includes('Error') ? (
+                  <AlertCircle className="h-5 w-5" />
+              ) : (
+                  <CheckCircle className="h-5 w-5" />
+              )}
               <p className="text-sm">{alertMessage}</p>
             </div>
         )}
@@ -173,4 +216,4 @@ const CalendarSelector = () => {
   );
 };
 
-export default CalendarSelector;
+export default Calendar;
