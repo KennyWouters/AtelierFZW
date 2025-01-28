@@ -7,6 +7,12 @@ import Dashboard from './components/Dashboard';
 import { useAuth } from './context/AuthContext';
 import { AdminRoute } from './components/AdminRoute';
 import UserManagement from './components/UserManagement';
+import Header from "./components/Header.tsx";
+import UserDetails from './components/UserDetails';
+import Calendar from './components/Calendar';
+import AdminCalendar from "./components/AdminCalendar.tsx";
+import DateDetails from "./components/DateDetails.tsx";
+
 
 
 // Wrapper component for auth form to handle redirects
@@ -24,11 +30,17 @@ function App() {
     return (
         <AuthProvider>
             <Router>
+                <Header />
                 <Routes>
+
                     <Route path="/login" element={<AuthWrapper />} />
                     <Route path="/register" element={<AuthWrapper />} />
                     <Route element={<ProtectedRoute />}>
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/admin/users/:userId" element={<UserDetails />} />
+                        <Route path="/calendar" element={<Calendar />} />
+                        <Route path="/admin/calendar" element={<AdminCalendar />} />
+                        <Route path="/admin/calendar/:date" element={<DateDetails />} />
                         {/* Add more protected routes here */}
                     </Route>
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />

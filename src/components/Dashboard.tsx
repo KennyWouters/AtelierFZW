@@ -1,6 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import Calendar from "./Calendar.tsx";
+import Calendar from './Calendar';
+import AdminCalendar from './AdminCalendar';
 
 const Dashboard = () => {
     const { user, isAdmin, signOut } = useAuth();
@@ -24,13 +25,19 @@ const Dashboard = () => {
                 </Link>
             )}
 
-            <Calendar
-                userId="user123"
-                onSubmit={(data) => {
-                    // Handle the submitted data
-                    // Make API call to save to database
-                }}
-            />
+            {!isAdmin && (
+                <Calendar />
+            )}
+
+            {isAdmin && (
+                <Link
+                    to="/admin/calendar"
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                    View Calendar
+                </Link>
+
+            )}
 
             <button
                 onClick={handleLogout}
