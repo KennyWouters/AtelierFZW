@@ -1,5 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import Calendar from "./Calendar.tsx";
 
 const Dashboard = () => {
     const { user, isAdmin, signOut } = useAuth();
@@ -22,6 +23,8 @@ const Dashboard = () => {
                     User Management
                 </Link>
             )}
+
+            <Calendar />
 
             <button
                 onClick={handleLogout}
