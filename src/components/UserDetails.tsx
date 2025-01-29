@@ -15,6 +15,7 @@ interface UserType {
 
 interface CalendarDateType {
     date: string;
+    user_id: string;
 }
 
 const UserDetails = () => {
@@ -25,11 +26,43 @@ const UserDetails = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchData = async () => {
             try {
-                const { data, error } = await supabase.auth.admin.getUserById(userId as string);
-                if (error) throw error;
-                setUser(data.user);
+                // Fetch user profile
+                const { data: userData, error: userError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+
+                if (userError) throw userError;
+
+                setUser({
+                    id: userData.id,
+                    email: userData.email,
+                    created_at: userData.created_at,
+                    user_metadata: {
+                        name: userData.full_name,
+                        email_verified: userData.email_verified
+                    },
+                    is_active: userData.is_active
+                });
+
+                // Fetch calendar dates for the user
+                console.log('Fetching dates for user:', userId);
+                const { data: datesData, error: datesError } = await supabase
+                    .from('calendar_dates')
+                    .select('date, user_id')
+                    .eq('user_id', userId);
+
+                if (datesError) {
+                    console.error('Error fetching dates:', datesError);
+                    throw datesError;
+                }
+
+                console.log('Received dates data:', datesData);
+                setSelectedDates(datesData || []);
+
             } catch (error: any) {
                 setError(error.message);
             } finally {
@@ -37,22 +70,8 @@ const UserDetails = () => {
             }
         };
 
-        const fetchSelectedDates = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('calendar_dates')
-                    .select('date')
-                    .eq('user_id', userId as string);
-                if (error) throw error;
-                setSelectedDates(data || []);
-            } catch (error: any) {
-                setError(error.message);
-            }
-        };
-
         if (userId) {
-            fetchUser();
-            fetchSelectedDates();
+            fetchData();
         }
     }, [userId]);
 
@@ -109,9 +128,10 @@ const UserDetails = () => {
                                     <InfoCard
                                         label="Selected Dates"
                                         value={selectedDates.length > 0
-                                            ? selectedDates.map(date =>
-                                                new Date(date.date).toLocaleDateString()
-                                            ).join(', ')
+                                            ? selectedDates
+                                                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                                                .map(date => new Date(date.date).toLocaleDateString())
+                                                .join(', ')
                                             : 'No dates selected'
                                         }
                                     />
