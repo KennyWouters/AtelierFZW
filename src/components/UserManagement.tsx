@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
+
 import { Users, Calendar, ShieldCheck } from 'lucide-react';
 
 interface User {
@@ -16,6 +17,7 @@ interface User {
 }
 
 interface UserWithRole extends User {
+    banned_until: boolean;
     roles?: {
         is_admin: boolean;
     };
@@ -118,9 +120,9 @@ const UserManagement = () => {
 
     if (fetchState.error) {
         return (
-            <Alert variant="destructive" className="mx-4">
-                <AlertDescription>{fetchState.error}</AlertDescription>
-            </Alert>
+            <alert variant="destructive" className="mx-4">
+                {fetchState.error}
+            </alert>
         );
     }
 
