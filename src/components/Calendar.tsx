@@ -61,27 +61,27 @@ const Calendar = () => {
     }
 
     try {
-      // Save dates to Supabase
-      const { error } = await supabase
-          .from('calendar_dates')  // replace with your actual table name
-          .insert(
-              selectedDates.map(date => ({
-                user_id: userId,
-                date: date.toISOString().split('T')[0],
-                created_at: new Date().toISOString()
-              }))
-          );
+  // Save dates to Supabase
+  const { error } = await supabase
+    .from('calendar_dates')  // replace with your actual table name
+    .insert(
+      selectedDates.map(date => ({
+        user_id: userId,
+        date: date.toISOString().split('T')[0],
+        created_at: new Date().toISOString()
+      }))
+    );
 
-      if (error) throw error;
+  if (error) throw error;
 
-      setShowAlert(true);
-      setAlertMessage('Dates saved successfully');
-      setTimeout(() => setShowAlert(false), 3000);
-    } catch (error) {
-      console.error('Error saving dates:', error);
-      setShowAlert(true);
-      setAlertMessage(`Error saving dates: ${error.message}`);
-    }
+  setShowAlert(true);
+  setAlertMessage('Dates saved successfully');
+  setTimeout(() => setShowAlert(false), 3000);
+} catch (error) {
+  console.error('Error saving dates:', error);
+  setShowAlert(true);
+  setAlertMessage(`Error saving dates: ${error instanceof Error ? error.message : 'Unknown error'}`);
+}
   };
 
   // Calendar generation code remains the same

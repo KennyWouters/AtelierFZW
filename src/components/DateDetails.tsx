@@ -53,7 +53,7 @@ function DateDetails() {
                 setUsers(usersData || []);
 
                 if (usersData?.length > 0) {
-                    const userIds = usersData.map(user => user.id);
+                    const userIds = usersData.map((user: { id: UserType; }) => user.id);
                     const { data: calendarDatesData, error: calendarDatesError } = await supabase
                         .from('calendar_dates')
                         .select('date')
@@ -66,11 +66,11 @@ function DateDetails() {
                 }
 
                 setIsLoading(false);
-            } catch (error: any) {
-                console.error('Error fetching data:', error);
-                setError(error.message);
-                setIsLoading(false);
-            }
+            } catch (error: unknown) {
+    console.error('Error fetching data:', error);
+    setError(error instanceof Error ? error.message : 'Unknown error');
+    setIsLoading(false);
+}
         };
 
         if (date) {
