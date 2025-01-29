@@ -26,7 +26,7 @@ const Header = () => {
 
     return (
         <header className="bg-blue-500 text-white p-4 flex justify-between items-center">
-            <h1 className="text-xl font-bold">My App</h1>
+            <h1 className="text-xl font-bold"> Foyer FZW : Réservations Atelier </h1>
             {isAdmin && (
                 <div>
                     <button
