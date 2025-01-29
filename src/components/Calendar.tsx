@@ -101,29 +101,29 @@ const Calendar = () => {
     return days;
   };
 
-  const handleDateSelect = (day) => {
-    if (!day) return;
+  const handleDateSelect = (day: number | null) => {
+  if (!day) return;
 
-    const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+  const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
 
-    if (selectedDates.some(date =>
-        date.getDate() === day &&
-        date.getMonth() === currentDate.getMonth() &&
-        date.getFullYear() === currentDate.getFullYear()
-    )) {
-      setSelectedDates(selectedDates.filter(date =>
-          !(date.getDate() === day &&
-              date.getMonth() === currentDate.getMonth() &&
-              date.getFullYear() === currentDate.getFullYear())
-      ));
-    } else if (selectedDates.length >= 6) {
-      setShowAlert(true);
-      setAlertMessage('Maximum 6 days can be selected');
-      setTimeout(() => setShowAlert(false), 3000);
-    } else {
-      setSelectedDates([...selectedDates, selectedDate]);
-    }
-  };
+  if (selectedDates.some(date =>
+      date.getDate() === day &&
+      date.getMonth() === currentDate.getMonth() &&
+      date.getFullYear() === currentDate.getFullYear()
+  )) {
+    setSelectedDates(selectedDates.filter(date =>
+        !(date.getDate() === day &&
+            date.getMonth() === currentDate.getMonth() &&
+            date.getFullYear() === currentDate.getFullYear())
+    ));
+  } else if (selectedDates.length >= 6) {
+    setShowAlert(true);
+    setAlertMessage('Maximum 6 days can be selected');
+    setTimeout(() => setShowAlert(false), 3000);
+  } else {
+    setSelectedDates([...selectedDates, selectedDate]);
+  }
+};
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
