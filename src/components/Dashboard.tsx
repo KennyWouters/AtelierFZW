@@ -4,7 +4,7 @@ import Calendar from './Calendar';
 
 
 const Dashboard = () => {
-    const { user, isAdmin, signOut } = useAuth();
+    const { isAdmin, signOut } = useAuth();
 
     const handleLogout = async () => {
         await signOut();

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
@@ -77,14 +77,15 @@ const UserManagement = () => {
 
                 // Combine all the data
                 const transformedUsers: UserWithRole[] = authUsers.map(user => ({
-                    ...user,
-                    is_active: user.is_active, // Ensure is_active is included
-                    banned_until: user.banned_until, // Ensure banned_until is included
-                    roles: roles?.find(role => role.user_id === user.id) || { is_admin: false },
-                    selectedDates: dates
-                        ?.filter(date => date.user_id === user.id)
-                        ?.map(date => date.date) || []
-                }));
+    ...user,
+    email: user.email || 'no-email@example.com', // Ensure email is always a string
+    is_active: user.is_active, // Ensure is_active is included
+    banned_until: user.banned_until, // Ensure banned_until is included
+    roles: roles?.find(role => role.user_id === user.id) || { is_admin: false },
+    selectedDates: dates
+        ?.filter(date => date.user_id === user.id)
+        ?.map(date => date.date) || []
+}));
 
                 setUsers(transformedUsers);
                 break;
