@@ -1,71 +1,74 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient.ts';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../components/ui/select";
+import { Button } from "../components/ui/button";
+import { cn } from "../lib/utils";
 
 const AdminCalendar = () => {
-    const [mounted, setMounted] = useState(false);
-    const [selectedDates, setSelectedDates] = useState<Date[]>([]);
-    const [currentDate] = useState(new Date());
-    const [showAlert, setShowAlert] = useState(false);
-    const [alertMessage, setAlertMessage] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
-    const [retryCount, setRetryCount] = useState(0);
     const navigate = useNavigate();
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [view, setView] = useState('month');
+    const [selectedDate, setSelectedDate] = useState(null);
 
-    // Handle hydration
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
 
-    // Fetch all users' calendar data using Supabase from shared client
-    useEffect(() => {
-    const fetchCalendarData = async () => {
-        try {
-            setIsLoading(true);
+    const dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-            // Fetch all calendar dates
-            const { data, error } = await supabase
-                .from('calendar_dates')  // replace with your actual table name
-                .select('*');
-
-            if (error) throw error;
-
-            // Process data as needed
-            setSelectedDates(data.map(entry => new Date(entry.date)));
-            setIsLoading(false);
-        } catch (error) {
-            console.error('Error fetching calendar data:', error);
-
-            if (retryCount < 3) {
-                console.log(`Retrying... Attempt ${retryCount + 1} of 3`);
-                setRetryCount(prev => prev + 1);
-                setTimeout(() => fetchCalendarData(), 1000 * (retryCount + 1));
-            } else {
-                setIsLoading(false);
-                setShowAlert(true);
-                setAlertMessage(`Error loading calendar data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            }
-        }
+    const handleDateClick = (day) => {
+        if (!day) return;
+        const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        newDate.setHours(12, 0, 0, 0);
+        setSelectedDate(newDate);
+        navigate(`/admin/calendar/${newDate.toISOString().split('T')[0]}`);
     };
 
-    fetchCalendarData();
-}, [retryCount]);
+    const handleMonthChange = (offset) => {
+        setCurrentDate(prev => {
+            const newDate = new Date(prev);
+            newDate.setMonth(newDate.getMonth() + offset);
+            return newDate;
+        });
+    };
 
-    const handleDateClick = (day: number | null) => {
-    if (!day) return;
+    const handleTodayClick = () => {
+        setCurrentDate(new Date());
+    };
 
-    const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    selectedDate.setHours(12, 0, 0, 0); // Set time to noon to avoid time zone issues
-    navigate(`/admin/calendar/${selectedDate.toISOString().split('T')[0]}`);
-};
+    const isToday = (day) => {
+        if (!day) return false;
+        const today = new Date();
+        return (
+            day === today.getDate() &&
+            currentDate.getMonth() === today.getMonth() &&
+            currentDate.getFullYear() === today.getFullYear()
+        );
+    };
 
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    const daysInMonth = lastDayOfMonth.getDate();
-    const startingDay = firstDayOfMonth.getDay();
+    const isSelected = (day) => {
+        if (!day || !selectedDate) return false;
+        return (
+            day === selectedDate.getDate() &&
+            currentDate.getMonth() === selectedDate.getMonth() &&
+            currentDate.getFullYear() === selectedDate.getFullYear()
+        );
+    };
 
-    const generateCalendarDays = () => {
+    const calendarGrid = useMemo(() => {
+        const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        const daysInMonth = lastDayOfMonth.getDate();
+        const startingDay = firstDayOfMonth.getDay();
+
         const days = [];
         for (let i = 0; i < startingDay; i++) {
             days.push(null);
@@ -73,75 +76,119 @@ const AdminCalendar = () => {
         for (let day = 1; day <= daysInMonth; day++) {
             days.push(day);
         }
-        return days;
-    };
 
-    const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ];
+        const weeks = [];
+        let week = [];
+        days.forEach(day => {
+            week.push(day);
+            if (week.length === 7) {
+                weeks.push(week);
+                week = [];
+            }
+        });
+        if (week.length > 0) {
+            while (week.length < 7) {
+                week.push(null);
+            }
+            weeks.push(week);
+        }
 
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    if (!mounted) {
-        return null;
-    }
-
-    if (isLoading) {
-        return (
-            <div className="p-4 max-w-md mx-auto bg-white rounded-lg shadow-lg">
-                <div className="text-center text-gray-600">Loading calendar data...</div>
-            </div>
-        );
-    }
+        return weeks;
+    }, [currentDate]);
 
     return (
-        <div className="p-4 max-w-md mx-auto bg-white rounded-lg shadow-lg">
-            <div className="mb-4 text-center">
-                <h2 className="text-2xl font-bold text-gray-800">
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </h2>
-            </div>
-
-            {showAlert && (
-                <div className={`mb-4 p-4 rounded-md flex items-center gap-2 ${
-                    alertMessage.includes('Error')
-                        ? 'bg-red-50 border border-red-200 text-red-600'
-                        : 'bg-green-50 border border-green-200 text-green-600'
-                }`}>
-                    {alertMessage.includes('Error') ? (
-                        <AlertCircle className="h-5 w-5" />
-                    ) : (
-                        <CheckCircle className="h-5 w-5" />
-                    )}
-                    <p className="text-sm">{alertMessage}</p>
+        <div className="p-8 max-w-4xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-4">
+                            <h2 className="text-2xl font-bold text-gray-800">
+                                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                            </h2>
+                            <div className="flex items-center space-x-2">
+                                <Select
+                                    value={view}
+                                    onValueChange={setView}
+                                >
+                                    <SelectTrigger className="w-32">
+                                        <SelectValue placeholder="Select view" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="month">Month</SelectItem>
+                                        <SelectItem value="week">Week</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Button
+                                variant="outline"
+                                onClick={handleTodayClick}
+                                className="px-4"
+                            >
+                                Today
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleMonthChange(-1)}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleMonthChange(1)}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
                 </div>
-            )}
 
-            <div className="grid grid-cols-7 gap-1 mb-4">
-                {dayNames.map(day => (
-                    <div key={day} className="text-center font-semibold p-2 text-gray-600">
-                        {day}
+                <div className="p-6">
+                    <div className="grid grid-cols-7 gap-4 mb-4">
+                        {dayNamesShort.map(day => (
+                            <div key={day} className="text-center font-semibold text-gray-600">
+                                {day}
+                            </div>
+                        ))}
                     </div>
-                ))}
 
-                {generateCalendarDays().map((day, index) => (
-                    <div
-                        key={index}
-                        onClick={() => handleDateClick(day)}
-                        className={`
-                            p-2 text-center cursor-pointer rounded transition-colors duration-200
-                            ${!day ? 'invisible' : 'hover:bg-gray-100'}
-                            ${selectedDates.some(date =>
-                            date.getDate() === day &&
-                            date.getMonth() === currentDate.getMonth() &&
-                            date.getFullYear() === currentDate.getFullYear()
-                        ) ? 'bg-blue-500 text-white hover:bg-blue-600' : 'text-gray-700'}
-                        `}
-                    >
-                        {day}
+                    <div className="space-y-4">
+                        {calendarGrid.map((week, weekIndex) => (
+                            <div key={weekIndex} className="grid grid-cols-7 gap-4">
+                                {week.map((day, dayIndex) => (
+                                    <div
+                                        key={`${weekIndex}-${dayIndex}`}
+                                        onClick={() => handleDateClick(day)}
+                                        className={cn(
+                                            "min-h-24 p-2 rounded-lg border transition-all duration-200",
+                                            !day && "invisible",
+                                            day && "hover:border-blue-500 cursor-pointer",
+                                            isToday(day) && "bg-blue-50 border-blue-200",
+                                            isSelected(day) && "border-blue-500 bg-blue-50",
+                                            "border-gray-200"
+                                        )}
+                                    >
+                                        {day && (
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className={cn(
+                                                    "text-sm font-medium",
+                                                    isToday(day) && "text-blue-600",
+                                                    isSelected(day) && "text-blue-700",
+                                                    !isToday(day) && !isSelected(day) && "text-gray-700"
+                                                )}>
+                                                    {day}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
                     </div>
-                ))}
+                </div>
             </div>
         </div>
     );

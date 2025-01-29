@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, ArrowRight } from 'lucide-react';
+import { X, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const TimeSelectPanel = ({ isOpen, onClose, selectedDate, onTimeSelect }) => {
     const [step, setStep] = useState('start'); // 'start' or 'end'
@@ -49,6 +49,11 @@ const TimeSelectPanel = ({ isOpen, onClose, selectedDate, onTimeSelect }) => {
         }
     };
 
+    const handleBack = () => {
+        setStep('start');
+        setEndTime(null);
+    };
+
     useEffect(() => {
         if (!isOpen) {
             setStep('start');
@@ -91,9 +96,19 @@ const TimeSelectPanel = ({ isOpen, onClose, selectedDate, onTimeSelect }) => {
                                 {tempStartTime ? formatTime(tempStartTime) : 'Start Time'}
                             </span>
                             <ArrowRight className="h-4 w-4" />
-                            <span className={step === 'end' ? 'text-blue-600 font-medium' : ''}>
-                                {endTime ? formatTime(endTime) : 'End Time'}
-                            </span>
+                            <div className="flex items-center">
+                                {step === 'end' && (
+                                    <button
+                                        onClick={handleBack}
+                                        className="mr-2 p-1 hover:bg-gray-100 rounded-full"
+                                    >
+                                        <ArrowLeft className="h-4 w-4 text-blue-500" />
+                                    </button>
+                                )}
+                                <span className={step === 'end' ? 'text-blue-600 font-medium' : ''}>
+                                    {endTime ? formatTime(endTime) : 'End Time'}
+                                </span>
+                            </div>
                         </div>
                     </div>
 

@@ -38,7 +38,7 @@ const Calendar = () => {
         } else {
           setIsLoading(false);
           setShowAlert(true);
-          setAlertMessage(`Error loading user data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setAlertMessage(`Erreur de chargement des données utilisateur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
         }
       }
     };
@@ -62,7 +62,7 @@ const Calendar = () => {
   const handleSubmit = async () => {
     if (!userId) {
       setShowAlert(true);
-      setAlertMessage('User not authenticated');
+      setAlertMessage('Utilisateur non authentifié');
       return;
     }
 
@@ -79,12 +79,12 @@ const Calendar = () => {
 
       if (error) throw error;
       setShowAlert(true);
-      setAlertMessage('Dates saved successfully');
+      setAlertMessage('Dates enregistrées avec succès');
       setTimeout(() => setShowAlert(false), 3000);
     } catch (error) {
-      console.error('Error saving dates:', error);
+      console.error('Erreur lors de l\'enregistrement des dates:', error);
       setShowAlert(true);
-      setAlertMessage(`Error saving dates: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setAlertMessage(`Erreur lors de l'enregistrement des dates: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     }
   };
 
@@ -95,7 +95,8 @@ const Calendar = () => {
 
     while (currentDay <= endDate) {
       const dayOfWeek = currentDay.getDay();
-      const isSelectable = dayOfWeek === 4 || dayOfWeek === 5 || dayOfWeek === 6;
+      const isFirstSaturday = dayOfWeek === 6 && currentDay.getDate() <= 7;
+      const isSelectable = (dayOfWeek === 4 || dayOfWeek === 5 || dayOfWeek === 6) && !isFirstSaturday;
       days.push({
         day: currentDay.getDate(),
         month: currentDay.getMonth(),
@@ -124,11 +125,11 @@ const Calendar = () => {
   };
 
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
   ];
 
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
   if (!mounted) return null;
 
@@ -137,7 +138,7 @@ const Calendar = () => {
         <div className="p-8 max-w-lg mx-auto bg-white rounded-xl shadow-lg">
           <div className="flex items-center justify-center space-x-2">
             <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce" />
-            <div className="text-gray-600">Loading calendar...</div>
+            <div className="text-gray-600">Chargement du calendrier...</div>
           </div>
         </div>
     );
@@ -151,7 +152,7 @@ const Calendar = () => {
       : `${monthNames[firstDay.month]} - ${monthNames[lastDay.month]} ${lastDay.year}`;
 
   const handleTimeSelect = (time) => {
-    console.log('Selected time:', time);
+    console.log('Heure sélectionnée:', time);
     // Handle the selected time
   };
 
@@ -162,17 +163,17 @@ const Calendar = () => {
             {dateRange}
           </h2>
           <p className="mt-2 text-center text-gray-600">
-            Select available dates for the next two weeks
+            Sélectionnez les dates disponibles pour les deux prochaines semaines
           </p>
         </div>
 
         {showAlert && (
             <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
-                alertMessage.includes('Error')
+                alertMessage.includes('Erreur')
                     ? 'bg-red-50 border-2 border-red-200 text-red-700'
                     : 'bg-green-50 border-2 border-green-200 text-green-700'
             }`}>
-              {alertMessage.includes('Error') ? (
+              {alertMessage.includes('Erreur') ? (
                   <AlertCircle className="h-5 w-5 flex-shrink-0" />
               ) : (
                   <CheckCircle className="h-5 w-5 flex-shrink-0" />
@@ -215,7 +216,7 @@ const Calendar = () => {
 
         <div className="mt-6 space-y-4">
           <p className="text-sm text-gray-600 text-center">
-            Available dates are highlighted in blue (Thu-Sat)
+            Les dates disponibles sont surlignées en bleu (Jeu-Sam)
           </p>
           <button
               onClick={handleSubmit}
@@ -228,7 +229,7 @@ const Calendar = () => {
               }
           `}
           >
-            Confirm Selection
+            Confirmer la sélection
           </button>
         </div>
 

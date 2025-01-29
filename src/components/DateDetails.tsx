@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { Alert, AlertDescription } from '../components/ui/alert';
 
+// Types
 interface DateDetailsType {
     details: string;
+    id: string;
+    user_id: string;
 }
 
 interface UserType {
@@ -16,10 +20,12 @@ interface UserType {
 
 interface CalendarDateType {
     date: string;
+    id: string;
+    user_id: string;
 }
 
-function DateDetails() {
-    const { date } = useParams<{ date: string }>();
+// Custom hook for data fetching
+const useDateDetailsData = (date: string | undefined) => {
     const [dateDetails, setDateDetails] = useState<DateDetailsType | null>(null);
     const [users, setUsers] = useState<UserType[]>([]);
     const [calendarDates, setCalendarDates] = useState<CalendarDateType[]>([]);
@@ -28,90 +34,124 @@ function DateDetails() {
 
     useEffect(() => {
         const fetchDateDetails = async () => {
+            if (!date) {
+                setError('No date provided');
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 setIsLoading(true);
+                setError(null);
 
-                // Get date details and log the response
+                // Fetch date details
                 const { data: dateData, error: dateError } = await supabase
                     .from('calendar_dates')
                     .select('*')
                     .eq('date', date)
                     .single();
 
-                console.log('Date Details Response:', { dateData, dateError });
-
-                if (dateError) throw dateError;
+                if (dateError) throw new Error(dateError.message);
                 setDateDetails(dateData);
 
-                // Query users and log the response
+                // Fetch users
                 const { data: usersData, error: usersError } = await supabase
                     .rpc('get_users_by_date', { target_date: date });
 
-                console.log('Users Response:', { usersData, usersError });
-
-                if (usersError) throw usersError;
+                if (usersError) throw new Error(usersError.message);
                 setUsers(usersData || []);
 
+                // Fetch calendar dates if we have users
                 if (usersData?.length > 0) {
-                    const userIds = usersData.map((user: { id: UserType; }) => user.id);
+                    const userIds = usersData.map(user => user.id);
                     const { data: calendarDatesData, error: calendarDatesError } = await supabase
                         .from('calendar_dates')
-                        .select('date')
+                        .select('*')
                         .in('user_id', userIds);
 
-                    console.log('Calendar Dates Response:', { calendarDatesData, calendarDatesError });
-
-                    if (calendarDatesError) throw calendarDatesError;
+                    if (calendarDatesError) throw new Error(calendarDatesError.message);
                     setCalendarDates(calendarDatesData || []);
                 }
-
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'An unknown error occurred');
+            } finally {
                 setIsLoading(false);
-            } catch (error: unknown) {
-    console.error('Error fetching data:', error);
-    setError(error instanceof Error ? error.message : 'Unknown error');
-    setIsLoading(false);
-}
+            }
         };
 
-        if (date) {
-            fetchDateDetails();
-        }
+        fetchDateDetails();
     }, [date]);
 
-    // Add debugging logs for render
-    console.log('Current State:', {
-        dateDetails,
-        users,
-        calendarDates,
-        isLoading,
-        error
-    });
+    return { dateDetails, users, calendarDates, isLoading, error };
+};
 
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
-    if (!dateDetails) return <div>No details available for this date.</div>;
+// Components
+const LoadingState = () => (
+    <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    </div>
+);
 
-    return (
-        <div>
-            <h2>Date Details for {date}</h2>
-            <pre>Debug: {JSON.stringify({ dateDetails, users }, null, 2)}</pre>
-            <p>Details: {dateDetails.details}</p>
-            <h3>Users who have chosen this date:</h3>
-            <ul>
-                {users.map((user: UserType) => (
-    <li key={user.id}>
-        {user.user_metadata?.name || user.email}
-    </li>
-))}
-            </ul>
-            <h3>Dates chosen by these users:</h3>
-            <ul>
-                {calendarDates.map((calendarDate, index) => (
-                    <li key={`${calendarDate.date}-${index}`}>
-                        {calendarDate.date}
+const ErrorState = ({ message }: { message: string }) => (
+    <Alert variant="destructive" className="my-4">
+        <AlertDescription>{message}</AlertDescription>
+    </Alert>
+);
+
+const UsersList = ({ users }: { users: UserType[] }) => (
+    <div className="mt-4">
+        <h3 className="text-lg font-semibold mb-2">Users who have chosen this date:</h3>
+        {users.length === 0 ? (
+            <p className="text-gray-600">No users have selected this date yet.</p>
+        ) : (
+            <ul className="space-y-2">
+                {users.map(user => (
+                    <li key={user.id} className="py-1">
+                        {user.user_metadata?.name || user.email}
                     </li>
                 ))}
             </ul>
+        )}
+    </div>
+);
+
+const DatesList = ({ dates }: { dates: CalendarDateType[] }) => (
+    <div className="mt-4">
+        <h3 className="text-lg font-semibold mb-2">Dates chosen by these users:</h3>
+        {dates.length === 0 ? (
+            <p className="text-gray-600">No dates available.</p>
+        ) : (
+            <ul className="space-y-2">
+                {dates.map((calendarDate, index) => (
+                    <li key={`${calendarDate.date}-${index}`} className="py-1">
+                        {new Date(calendarDate.date).toLocaleDateString()}
+                    </li>
+                ))}
+            </ul>
+        )}
+    </div>
+);
+
+function DateDetails() {
+    const { date } = useParams<{ date: string }>();
+    const { dateDetails, users, calendarDates, isLoading, error } = useDateDetailsData(date);
+
+    if (isLoading) return <LoadingState />;
+    if (error) return <ErrorState message={error} />;
+    if (!dateDetails) return <ErrorState message="No details available for this date." />;
+
+    return (
+        <div className="p-6">
+            <h2 className="text-2xl font-bold mb-4">
+                Date Details for {new Date(date!).toLocaleDateString()}
+            </h2>
+
+            <div className="bg-white rounded-lg shadow p-6">
+                <p className="text-gray-700">{dateDetails.details}</p>
+
+                <UsersList users={users} />
+                <DatesList dates={calendarDates} />
+            </div>
         </div>
     );
 }
