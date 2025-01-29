@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -98,11 +98,11 @@ function DateDetails() {
             <p>Details: {dateDetails.details}</p>
             <h3>Users who have chosen this date:</h3>
             <ul>
-                {users.map(user => (
-                    <li key={user.id}>
-                        {user.user_metadata?.name || user.email}
-                    </li>
-                ))}
+                {users.map((user: UserType) => (
+    <li key={user.id}>
+        {user.user_metadata?.name || user.email}
+    </li>
+))}
             </ul>
             <h3>Dates chosen by these users:</h3>
             <ul>
