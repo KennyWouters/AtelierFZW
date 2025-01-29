@@ -3,14 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import AuthForm from './components/AuthForm';
-import Dashboard from './components/Dashboard';
+import Dashboard from './pages/Dashboard.tsx';
 import { useAuth } from './context/AuthContext';
 import { AdminRoute } from './components/AdminRoute';
-import UserManagement from './components/UserManagement';
+import UserManagement from './pages/UserManagement.tsx';
 import Header from "./components/Header.tsx";
 import UserDetails from './components/UserDetails';
-import Calendar from './components/Calendar';
-import AdminCalendar from "./components/AdminCalendar.tsx";
+import Calendar from './pages/Calendar.tsx';
+import AdminCalendar from "./pages/AdminCalendar.tsx";
 import DateDetails from "./components/DateDetails.tsx";
 
 

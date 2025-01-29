@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient.ts';
 
 const Calendar = () => {
   const [mounted, setMounted] = useState(false);

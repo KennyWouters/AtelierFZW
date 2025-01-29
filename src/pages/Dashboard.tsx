@@ -1,6 +1,6 @@
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext.tsx';
 import { Link } from 'react-router-dom';
-import Calendar from './Calendar';
+import Calendar from './Calendar.tsx';
 
 
 const Dashboard = () => {
