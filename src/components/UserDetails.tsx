@@ -132,7 +132,7 @@ const UserDetails = () => {
                                                 .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                                                 .map(date => new Date(date.date).toLocaleDateString())
                                                 .join(', ')
-                                            : 'No dates selected'
+                                            : 'Pas de date(s) sélectionnée(s)'
                                         }
                                     />
                                 </div>
