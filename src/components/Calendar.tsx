@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 const Calendar = () => {
   const [mounted, setMounted] = useState(false);
-  const [selectedDates, setSelectedDates] = useState([]);
+  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [currentDate] = useState(new Date());
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  const [userId, setUserId] = useState(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
 
@@ -19,39 +19,39 @@ const Calendar = () => {
 
   // Fetch user data using Supabase from shared client
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setIsLoading(true);
+  const fetchUser = async () => {
+    try {
+      setIsLoading(true);
 
-        // Get the current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Get the current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (sessionError) throw sessionError;
+      if (sessionError) throw sessionError;
 
-        if (!session) {
-          throw new Error('No active session');
-        }
-
-        // Just use the session user id directly
-        setUserId(session.user.id);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-
-        if (retryCount < 3) {
-          console.log(`Retrying... Attempt ${retryCount + 1} of 3`);
-          setRetryCount(prev => prev + 1);
-          setTimeout(() => fetchUser(), 1000 * (retryCount + 1));
-        } else {
-          setIsLoading(false);
-          setShowAlert(true);
-          setAlertMessage(`Error loading user data: ${error.message}`);
-        }
+      if (!session) {
+        throw new Error('No active session');
       }
-    };
 
-    fetchUser();
-  }, [retryCount]);
+      // Just use the session user id directly
+      setUserId(session.user.id);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+
+      if (retryCount < 3) {
+        console.log(`Retrying... Attempt ${retryCount + 1} of 3`);
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => fetchUser(), 1000 * (retryCount + 1));
+      } else {
+        setIsLoading(false);
+        setShowAlert(true);
+        setAlertMessage(`Error loading user data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  };
+
+  fetchUser();
+}, [retryCount]);
 
   const handleSubmit = async () => {
     if (!userId) {
