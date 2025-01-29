@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 const AdminCalendar = () => {
     const [mounted, setMounted] = useState(false);
-    const [selectedDates, setSelectedDates] = useState([]);
+    const [selectedDates, setSelectedDates] = useState<Date[]>([]);
     const [currentDate] = useState(new Date());
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
@@ -20,45 +20,45 @@ const AdminCalendar = () => {
 
     // Fetch all users' calendar data using Supabase from shared client
     useEffect(() => {
-        const fetchCalendarData = async () => {
-            try {
-                setIsLoading(true);
+    const fetchCalendarData = async () => {
+        try {
+            setIsLoading(true);
 
-                // Fetch all calendar dates
-                const { data, error } = await supabase
-                    .from('calendar_dates')  // replace with your actual table name
-                    .select('*');
+            // Fetch all calendar dates
+            const { data, error } = await supabase
+                .from('calendar_dates')  // replace with your actual table name
+                .select('*');
 
-                if (error) throw error;
+            if (error) throw error;
 
-                // Process data as needed
-                setSelectedDates(data.map(entry => new Date(entry.date)));
+            // Process data as needed
+            setSelectedDates(data.map(entry => new Date(entry.date)));
+            setIsLoading(false);
+        } catch (error) {
+            console.error('Error fetching calendar data:', error);
+
+            if (retryCount < 3) {
+                console.log(`Retrying... Attempt ${retryCount + 1} of 3`);
+                setRetryCount(prev => prev + 1);
+                setTimeout(() => fetchCalendarData(), 1000 * (retryCount + 1));
+            } else {
                 setIsLoading(false);
-            } catch (error) {
-                console.error('Error fetching calendar data:', error);
-
-                if (retryCount < 3) {
-                    console.log(`Retrying... Attempt ${retryCount + 1} of 3`);
-                    setRetryCount(prev => prev + 1);
-                    setTimeout(() => fetchCalendarData(), 1000 * (retryCount + 1));
-                } else {
-                    setIsLoading(false);
-                    setShowAlert(true);
-                    setAlertMessage(`Error loading calendar data: ${error.message}`);
-                }
+                setShowAlert(true);
+                setAlertMessage(`Error loading calendar data: ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
-        };
-
-        fetchCalendarData();
-    }, [retryCount]);
-
-    const handleDateClick = (day) => {
-        if (!day) return;
-
-        const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        selectedDate.setHours(12, 0, 0, 0); // Set time to noon to avoid time zone issues
-        navigate(`/admin/calendar/${selectedDate.toISOString().split('T')[0]}`);
+        }
     };
+
+    fetchCalendarData();
+}, [retryCount]);
+
+    const handleDateClick = (day: number | null) => {
+    if (!day) return;
+
+    const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    selectedDate.setHours(12, 0, 0, 0); // Set time to noon to avoid time zone issues
+    navigate(`/admin/calendar/${selectedDate.toISOString().split('T')[0]}`);
+};
 
     const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);

@@ -78,6 +78,8 @@ const UserManagement = () => {
                 // Combine all the data
                 const transformedUsers: UserWithRole[] = authUsers.map(user => ({
                     ...user,
+                    is_active: user.is_active, // Ensure is_active is included
+                    banned_until: user.banned_until, // Ensure banned_until is included
                     roles: roles?.find(role => role.user_id === user.id) || { is_admin: false },
                     selectedDates: dates
                         ?.filter(date => date.user_id === user.id)
