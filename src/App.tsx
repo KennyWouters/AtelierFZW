@@ -12,7 +12,8 @@ import UserDetails from './components/UserDetails';
 import Calendar from './pages/Calendar.tsx';
 import AdminCalendar from "./pages/AdminCalendar.tsx";
 import DateDetails from "./components/DateDetails.tsx";
-
+import SelectTime from "./pages/SelectTimeOld.tsx.";
+import TimeSelector from './components/TimeSelectPanel.tsx';
 
 
 // Wrapper component for auth form to handle redirects
@@ -36,11 +37,14 @@ function App() {
                     <Route path="/login" element={<AuthWrapper />} />
                     <Route path="/register" element={<AuthWrapper />} />
                     <Route element={<ProtectedRoute />}>
+                        <Route path="/select-time/:date" Component={SelectTime} />
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/admin/users/:userId" element={<UserDetails />} />
                         <Route path="/calendar" element={<Calendar />} />
                         <Route path="/admin/calendar" element={<AdminCalendar />} />
                         <Route path="/admin/calendar/:date" element={<DateDetails />} />
+                        <Route path="/select-time/:date" element={<TimeSelector />} />
+
                         {/* Add more protected routes here */}
                     </Route>
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
