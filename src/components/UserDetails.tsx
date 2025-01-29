@@ -2,20 +2,35 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
+interface UserType {
+    id: string;
+    email: string;
+    created_at: string;
+    user_metadata?: {
+        name?: string;
+        email_verified?: boolean;
+    };
+    is_active: boolean;
+}
+
+interface CalendarDateType {
+    date: string;
+}
+
 const UserDetails = () => {
-    const { userId } = useParams();
-    const [user, setUser] = useState(null);
-    const [selectedDates, setSelectedDates] = useState([]);
+    const { userId } = useParams<{ userId: string }>();
+    const [user, setUser] = useState<UserType | null>(null);
+    const [selectedDates, setSelectedDates] = useState<CalendarDateType[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const { data, error } = await supabase.auth.admin.getUserById(userId);
+                const { data, error } = await supabase.auth.admin.getUserById(userId as string);
                 if (error) throw error;
                 setUser(data.user);
-            } catch (error) {
+            } catch (error: any) {
                 setError(error.message);
             } finally {
                 setLoading(false);
@@ -27,16 +42,18 @@ const UserDetails = () => {
                 const { data, error } = await supabase
                     .from('calendar_dates')
                     .select('date')
-                    .eq('user_id', userId);
+                    .eq('user_id', userId as string);
                 if (error) throw error;
-                setSelectedDates(data.map(item => item.date));
-            } catch (error) {
+                setSelectedDates(data || []);
+            } catch (error: any) {
                 setError(error.message);
             }
         };
 
-        fetchUser();
-        fetchSelectedDates();
+        if (userId) {
+            fetchUser();
+            fetchSelectedDates();
+        }
     }, [userId]);
 
     if (loading) {
@@ -93,7 +110,7 @@ const UserDetails = () => {
                                         label="Selected Dates"
                                         value={selectedDates.length > 0
                                             ? selectedDates.map(date =>
-                                                new Date(date).toLocaleDateString()
+                                                new Date(date.date).toLocaleDateString()
                                             ).join(', ')
                                             : 'No dates selected'
                                         }
@@ -108,7 +125,7 @@ const UserDetails = () => {
     );
 };
 
-const InfoCard = ({ label, value }) => (
+const InfoCard = ({ label, value }: { label: string, value: string }) => (
     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
         <div className="text-sm font-medium text-gray-500 mb-1">{label}</div>
         <div className="text-gray-900 break-words">{value}</div>

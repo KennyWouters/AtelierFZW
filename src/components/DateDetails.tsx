@@ -18,7 +18,7 @@ interface CalendarDateType {
     date: string;
 }
 
-function DateDetails() {  // Changed to function declaration
+function DateDetails() {
     const { date } = useParams<{ date: string }>();
     const [dateDetails, setDateDetails] = useState<DateDetailsType | null>(null);
     const [users, setUsers] = useState<UserType[]>([]);
@@ -31,19 +31,23 @@ function DateDetails() {  // Changed to function declaration
             try {
                 setIsLoading(true);
 
+                // Get date details and log the response
                 const { data: dateData, error: dateError } = await supabase
                     .from('calendar_dates')
                     .select('*')
                     .eq('date', date)
                     .single();
 
+                console.log('Date Details Response:', { dateData, dateError });
+
                 if (dateError) throw dateError;
                 setDateDetails(dateData);
 
+                // Query users and log the response
                 const { data: usersData, error: usersError } = await supabase
-                    .from('auth.users')
-                    .select('id, email, user_metadata')
-                    .eq('user_metadata->chosen_date', date);
+                    .rpc('get_users_by_date', { target_date: date });
+
+                console.log('Users Response:', { usersData, usersError });
 
                 if (usersError) throw usersError;
                 setUsers(usersData || []);
@@ -54,6 +58,8 @@ function DateDetails() {  // Changed to function declaration
                         .from('calendar_dates')
                         .select('date')
                         .in('user_id', userIds);
+
+                    console.log('Calendar Dates Response:', { calendarDatesData, calendarDatesError });
 
                     if (calendarDatesError) throw calendarDatesError;
                     setCalendarDates(calendarDatesData || []);
@@ -72,6 +78,15 @@ function DateDetails() {  // Changed to function declaration
         }
     }, [date]);
 
+    // Add debugging logs for render
+    console.log('Current State:', {
+        dateDetails,
+        users,
+        calendarDates,
+        isLoading,
+        error
+    });
+
     if (isLoading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
     if (!dateDetails) return <div>No details available for this date.</div>;
@@ -79,6 +94,7 @@ function DateDetails() {  // Changed to function declaration
     return (
         <div>
             <h2>Date Details for {date}</h2>
+            <pre>Debug: {JSON.stringify({ dateDetails, users }, null, 2)}</pre>
             <p>Details: {dateDetails.details}</p>
             <h3>Users who have chosen this date:</h3>
             <ul>
@@ -100,4 +116,4 @@ function DateDetails() {  // Changed to function declaration
     );
 }
 
-export default DateDetails;  // Make sure this line is present
+export default DateDetails;
