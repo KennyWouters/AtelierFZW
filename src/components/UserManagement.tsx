@@ -13,7 +13,7 @@ interface User {
         name?: string;
         email_verified?: boolean;
     };
-    is_active: boolean;
+
 }
 
 interface UserWithRole extends User {
@@ -79,12 +79,11 @@ const UserManagement = () => {
                 const transformedUsers: UserWithRole[] = authUsers.map(user => ({
     ...user,
     email: user.email || 'no-email@example.com', // Ensure email is always a string
-    is_active: user.is_active, // Ensure is_active is included
-    banned_until: user.banned_until, // Ensure banned_until is included
     roles: roles?.find(role => role.user_id === user.id) || { is_admin: false },
     selectedDates: dates
         ?.filter(date => date.user_id === user.id)
-        ?.map(date => date.date) || []
+        ?.map(date => date.date) || [],
+    banned_until: false // Add this line to include the banned_until property
 }));
 
                 setUsers(transformedUsers);
@@ -122,12 +121,12 @@ const UserManagement = () => {
     }
 
     if (fetchState.error) {
-        return (
-            <alert variant="destructive" className="mx-4">
-                {fetchState.error}
-            </alert>
-        );
-    }
+    return (
+        <div className="alert alert-destructive mx-4">
+            {fetchState.error}
+        </div>
+    );
+}
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8">
