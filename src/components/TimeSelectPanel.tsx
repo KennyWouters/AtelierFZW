@@ -1,22 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
+
+interface TimeSelectPanelProps {
+    isOpen: boolean;
+    onClose: () => void;
+    selectedDate: string;
+    onTimeSelect: (timeSlotData: { startTime: string; endTime: string }) => void;
+    userId: string;
+    onError: (error: string) => void;
+}
 
 const TimeSelectPanel = ({
                              isOpen,
                              onClose,
                              selectedDate,
                              onTimeSelect,
-                             userId, // Add userId prop
-                             onError // Add error handling callback
-                         }) => {
+                             userId,
+                             onError
+                         }: TimeSelectPanelProps) => {
     const [step, setStep] = useState('start');
     const [tempStartTime, setTempStartTime] = useState('14:00');
-    const [startTime, setStartTime] = useState(null);
-    const [endTime, setEndTime] = useState(null);
+    const [startTime, setStartTime] = useState<string | null>(null);
+    const [endTime, setEndTime] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Function to record time slot in database
-    const recordTimeSlot = async (timeSlotData) => {
+    const recordTimeSlot = async (timeSlotData: { startTime: string; endTime: string }) => {
         try {
             const response = await fetch('/api/timeslots', {
                 method: 'POST',
@@ -37,7 +46,7 @@ const TimeSelectPanel = ({
 
             return await response.json();
         } catch (error) {
-            throw new Error('Error recording time slot: ' + error.message);
+            throw new Error('Error recording time slot: ' + (error as Error).message);
         }
     };
 
@@ -51,8 +60,8 @@ const TimeSelectPanel = ({
             try {
                 // Prepare the time slot data
                 const timeSlotData = {
-                    startTime,
-                    endTime
+                    startTime: startTime!,
+                    endTime: endTime!
                 };
 
                 // First record in database
@@ -62,7 +71,7 @@ const TimeSelectPanel = ({
                 onTimeSelect?.(timeSlotData);
                 onClose();
             } catch (error) {
-                onError?.(error.message);
+                onError?.((error as Error).message);
             } finally {
                 setIsSubmitting(false);
             }
@@ -70,30 +79,30 @@ const TimeSelectPanel = ({
     };
 
     // Rest of the component logic remains the same
-    const generateTimeSlots = (minTime) => {
-        const slots = [];
-        const [minHour, minMinute] = minTime ? minTime.split(':').map(Number) : [14, 0];
+    const generateTimeSlots = (minTime: string | null) => {
+    const slots = [];
+    const [minHour, minMinute] = minTime ? minTime.split(':').map(Number) : [14, 0];
 
-        for (let hour = minHour; hour <= 19; hour++) {
-            for (let minute of ['00', '30']) {
-                if (hour === minHour && minute < minMinute) continue;
-                if (hour === 19 && minute === '30') continue;
+    for (let hour = minHour; hour <= 19; hour++) {
+        for (const minute of ['00', '30']) {
+            if (hour === minHour && Number(minute) < minMinute) continue;
+            if (hour === 19 && minute === '30') continue;
 
-                const time = `${String(hour).padStart(2, '0')}:${minute}`;
-                slots.push(time);
-            }
+            const time = `${String(hour).padStart(2, '0')}:${minute}`;
+            slots.push(time);
         }
-        return slots;
-    };
+    }
+    return slots;
+};
 
-    const formatTime = (time) => {
+    const formatTime = (time: string | null) => {
         if (!time) return '';
         const [hour, minute] = time.split(':');
-        const hour12 = hour % 12 || 12;
-        return `${hour12}:${minute} ${hour >= 12 ? 'PM' : 'AM'}`;
+        const hour12 = Number(hour) % 12 || 12;
+        return `${hour12}:${minute} ${Number(hour) >= 12 ? 'PM' : 'AM'}`;
     };
 
-    const handleTimeSelect = (time) => {
+    const handleTimeSelect = (time: string) => {
         if (step === 'start') {
             setTempStartTime(time);
         } else {
@@ -168,7 +177,7 @@ const TimeSelectPanel = ({
                         <div className="space-y-2">
                             {timeSlots.map((time) => {
                                 const isSelected = step === 'start' ? time === tempStartTime : time === endTime;
-                                const isDisabled = step === 'end' && time <= startTime;
+                                const isDisabled = step === 'end' && time <= startTime!;
 
                                 return (
                                     <button

@@ -63,7 +63,7 @@ const useDateDetailsData = (date: string | undefined) => {
 
                 // Fetch calendar dates if we have users
                 if (usersData?.length > 0) {
-                    const userIds = usersData.map(user => user.id);
+                    const userIds = usersData.map((user: UserType) => user.id);
                     const { data: calendarDatesData, error: calendarDatesError } = await supabase
                         .from('calendar_dates')
                         .select('*')
@@ -105,7 +105,7 @@ const UsersList = ({ users }: { users: UserType[] }) => (
             <p className="text-gray-600">No users have selected this date yet.</p>
         ) : (
             <ul className="space-y-2">
-                {users.map(user => (
+                {users.map((user: UserType) => (
                     <li key={user.id} className="py-1">
                         {user.user_metadata?.name || user.email}
                     </li>
