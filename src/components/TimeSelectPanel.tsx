@@ -1,12 +1,75 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
 
-const TimeSelectPanel = ({ isOpen, onClose, selectedDate, onTimeSelect }) => {
-    const [step, setStep] = useState('start'); // 'start' or 'end'
+const TimeSelectPanel = ({
+                             isOpen,
+                             onClose,
+                             selectedDate,
+                             onTimeSelect,
+                             userId, // Add userId prop
+                             onError // Add error handling callback
+                         }) => {
+    const [step, setStep] = useState('start');
     const [tempStartTime, setTempStartTime] = useState('14:00');
     const [startTime, setStartTime] = useState(null);
     const [endTime, setEndTime] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Function to record time slot in database
+    const recordTimeSlot = async (timeSlotData) => {
+        try {
+            const response = await fetch('/api/timeslots', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: userId,
+                    date: selectedDate,
+                    startTime: timeSlotData.startTime,
+                    endTime: timeSlotData.endTime,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to record time slot');
+            }
+
+            return await response.json();
+        } catch (error) {
+            throw new Error('Error recording time slot: ' + error.message);
+        }
+    };
+
+    const handleConfirm = async () => {
+        if (step === 'start') {
+            setStartTime(tempStartTime);
+            setEndTime(null);
+            setStep('end');
+        } else {
+            setIsSubmitting(true);
+            try {
+                // Prepare the time slot data
+                const timeSlotData = {
+                    startTime,
+                    endTime
+                };
+
+                // First record in database
+                await recordTimeSlot(timeSlotData);
+
+                // If successful, call the onTimeSelect callback
+                onTimeSelect?.(timeSlotData);
+                onClose();
+            } catch (error) {
+                onError?.(error.message);
+            } finally {
+                setIsSubmitting(false);
+            }
+        }
+    };
+
+    // Rest of the component logic remains the same
     const generateTimeSlots = (minTime) => {
         const slots = [];
         const [minHour, minMinute] = minTime ? minTime.split(':').map(Number) : [14, 0];
@@ -35,17 +98,6 @@ const TimeSelectPanel = ({ isOpen, onClose, selectedDate, onTimeSelect }) => {
             setTempStartTime(time);
         } else {
             setEndTime(time);
-        }
-    };
-
-    const handleConfirm = () => {
-        if (step === 'start') {
-            setStartTime(tempStartTime);
-            setEndTime(null);
-            setStep('end');
-        } else {
-            onTimeSelect?.({ startTime, endTime });
-            onClose();
         }
     };
 
@@ -149,13 +201,15 @@ const TimeSelectPanel = ({ isOpen, onClose, selectedDate, onTimeSelect }) => {
                     <div className="p-4 border-t">
                         <button
                             onClick={handleConfirm}
-                            disabled={step === 'end' && !endTime}
+                            disabled={(step === 'end' && !endTime) || isSubmitting}
                             className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2
-                                ${step === 'end' && !endTime
+                                ${(step === 'end' && !endTime) || isSubmitting
                                 ? 'bg-gray-300 cursor-not-allowed'
                                 : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
                         >
-                            {step === 'start' ? (
+                            {isSubmitting ? (
+                                <span>Recording...</span>
+                            ) : step === 'start' ? (
                                 <span>Confirm Start Time: {formatTime(tempStartTime)}</span>
                             ) : (
                                 <span>Confirm Time Slot</span>
